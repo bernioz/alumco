@@ -12,12 +12,10 @@ class DashboardController extends Controller
 
         dd('¡Freno de mano! Llegaste al Semáforo y tu rol es: ' . $user->rol);
 
-        // Si por alguna razón no hay usuario, lo mandamos al login
         if (!$user) {
             return redirect('/login');
         }
 
-        // Leemos tu columna 'rol'
         if ($user->rol === 'admin') {
             return redirect()->route('admin.cursos.index');
         }
@@ -26,7 +24,7 @@ class DashboardController extends Controller
             return redirect()->route('profesor.cursos.index');
         }
 
-        // Por defecto, cae en alumno
+        // Por defecto el usuario nuevo es alumno
         return redirect()->route('alumno.dashboard');
     }
 }

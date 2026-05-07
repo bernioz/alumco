@@ -33,7 +33,6 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // Dentro del método store
         $user = Auth::user();
 
         if ($user->es_admin) {

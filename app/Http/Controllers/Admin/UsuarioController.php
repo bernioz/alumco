@@ -14,7 +14,7 @@ class UsuarioController extends Controller
 {
     public function alumnos(Request $request)
     {
-        // Buscador
+        
         $query = User::where('rol', 'alumno');
 
         if ($request->buscar) {
@@ -25,10 +25,11 @@ class UsuarioController extends Controller
             return [
                 'id' => $user->id,
                 'name' => $user->name,
+                'email' => $user->email,
                 'sexo' => $user->sexo ?? 'No definido',
-                // Calculamos la edad con Carbon
                 'edad' => $user->fecha_nacimiento ? Carbon::parse($user->fecha_nacimiento)->age : 'N/A',
-                'email' => $user->email
+                'sede' => $user->sede ?? 'Sin sede', 
+                'rol' => $user->rol                  
             ];
         });
 
@@ -38,7 +39,7 @@ class UsuarioController extends Controller
             'filtros' => $request->only(['buscar'])
         ]);
     }
-
+// Función para inscribir/desinscribir alumnos masivamente a un curso
     public function inscripcionMasiva(Request $request)
     {
         $request->validate([
@@ -78,7 +79,9 @@ class UsuarioController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'sexo' => $user->sexo ?? 'No definido',
-                'edad' => $user->fecha_nacimiento ? \Carbon\Carbon::parse($user->fecha_nacimiento)->age : 'N/A',
+                'edad' => $user->fecha_nacimiento ? Carbon::parse($user->fecha_nacimiento)->age : 'N/A',
+                'sede' => $user->sede ?? 'Sin sede', 
+                'rol' => $user->rol                  
             ];
         });
 
@@ -88,31 +91,117 @@ class UsuarioController extends Controller
         ]);
     }
 
-    // Función para ver el perfil individual de un alumno
+    
     public function verAlumno($id)
     {
         $alumno = User::where('rol', 'alumno')
-                      ->with('cursosInscritos') // Traemos los cursos en los que está inscrito
+                      ->with('cursosInscritos') 
                       ->findOrFail($id);
         
-        $alumno->edad = $alumno->fecha_nacimiento ? \Carbon\Carbon::parse($alumno->fecha_nacimiento)->age : 'N/A';
+        $alumno->edad = $alumno->fecha_nacimiento ? Carbon::parse($alumno->fecha_nacimiento)->age : 'N/A';
 
         return Inertia::render('Admin/Usuarios/AlumnoPerfil', [
             'alumno' => $alumno
         ]);
     }
 
-    // Función para ver el perfil individual de un profesor
+    
     public function verProfesor($id)
     {
-        // Buscamos al usuario y nos traemos sus cursos adjuntos
         $profesor = User::with('cursos')->findOrFail($id);
-        
-        // Calculamos la edad para mandarla a la vista
-        $profesor->edad = $profesor->fecha_nacimiento ? \Carbon\Carbon::parse($profesor->fecha_nacimiento)->age : 'N/A';
+        $profesor->edad = $profesor->fecha_nacimiento ? Carbon::parse($profesor->fecha_nacimiento)->age : 'N/A';
 
         return Inertia::render('Admin/Usuarios/ProfesorPerfil', [
             'profesor' => $profesor
+        ]);
+    }
+
+    public function actualizarRol(Request $request, User $usuario)
+    {
+        $request->validate([
+            'rol' => 'required|in:admin,profesor,alumno'
+        ]);
+
+        $usuario->update([
+            'rol' => $request->rol
+        ]);
+
+        return redirect()->back()->with('success', 'Rol actualizado correctamente.');
+    }
+
+    public function procesarMasivo(Request $request)
+    {
+      
+        $request->validate([
+            'user_ids' => 'required|array',
+            'curso_id' => 'required|exists:cursos,id',
+            'accion' => 'required|in:inscribir,desinscribir'
+        ]);
+
+        $cursoId = $request->curso_id;
+        $userIds = $request->user_ids;
+
+        
+        if ($request->accion === 'inscribir') {
+            foreach ($userIds as $userId) {
+                
+                \App\Models\Inscripcion::firstOrCreate([
+                    'alumno_id' => $userId, 
+                    'curso_id' => $cursoId
+                ], [
+                    'estado' => 'en_progreso',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
+        } elseif ($request->accion === 'desinscribir') {
+            \App\Models\Inscripcion::whereIn('alumno_id', $userIds) 
+                ->where('curso_id', $cursoId)
+                ->delete();
+        }
+
+        return redirect()->back()->with('success', 'Acción masiva realizada correctamente.');
+    }
+// Función para mostrar estadísticas de usuarios
+    public function estadisticas()
+    {
+        $totalUsuarios = User::count();
+
+        $porRol = User::select('rol', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->groupBy('rol')
+            ->get();
+
+        $porSexo = User::select('sexo', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->whereNotNull('sexo')
+            ->groupBy('sexo')
+            ->get();
+
+        $porSede = User::select('sede', \Illuminate\Support\Facades\DB::raw('count(*) as total'))
+            ->whereNotNull('sede')
+            ->groupBy('sede')
+            ->get();
+
+        $porEdad = User::select(
+            \Illuminate\Support\Facades\DB::raw('
+                CASE 
+                    WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) < 20 THEN "Menores de 20"
+                    WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 20 AND 29 THEN "20-29 años"
+                    WHEN TIMESTAMPDIFF(YEAR, fecha_nacimiento, CURDATE()) BETWEEN 30 AND 39 THEN "30-39 años"
+                    ELSE "40+ años" 
+                END as rango
+            '),
+            \Illuminate\Support\Facades\DB::raw('count(*) as total')
+        )
+        ->whereNotNull('fecha_nacimiento') 
+        ->groupBy('rango')
+        ->get();
+ 
+        return Inertia::render('Admin/Estadisticas', [
+            'totalUsuarios' => $totalUsuarios,
+            'porRol' => $porRol,
+            'porSexo' => $porSexo,
+            'porSede' => $porSede,
+            'porEdad' => $porEdad
         ]);
     }
 }

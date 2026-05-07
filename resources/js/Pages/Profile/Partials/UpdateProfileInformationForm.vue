@@ -19,6 +19,9 @@ const user = usePage().props.auth.user;
 const form = useForm({
     name: user.name,
     email: user.email,
+    sexo: user.sexo || '',
+    fecha_nacimiento: user.fecha_nacimiento || '',
+    sede: user.sede || '',
 });
 </script>
 
@@ -67,6 +70,53 @@ const form = useForm({
                 />
 
                 <InputError class="mt-2" :message="form.errors.email" />
+            </div>
+
+            <!-- Campo Sexo -->
+            <div>
+                <InputLabel for="sexo" value="Sexo" />
+                <select
+                    id="sexo"
+                    v-model="form.sexo"
+                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                    required
+                >
+                    <option value="" disabled>Selecciona una opción</option>
+                    <option value="Masculino">Masculino</option>
+                    <option value="Femenino">Femenino</option>
+                    <option value="Otro">Otro</option>
+                    <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+                </select>
+                <InputError class="mt-2" :message="form.errors.sexo" />
+            </div>
+
+            <!-- Campo Fecha de Nacimiento -->
+            <div>
+                <InputLabel for="fecha_nacimiento" value="Fecha de Nacimiento" />
+                <TextInput
+                    id="fecha_nacimiento"
+                    type="date"
+                    class="mt-1 block w-full"
+                    v-model="form.fecha_nacimiento"
+                    required
+                />
+                <InputError class="mt-2" :message="form.errors.fecha_nacimiento" />
+            </div>
+
+            <!-- Campo Sede -->
+            <div>
+                <InputLabel for="sede" value="Sede" />
+                <select
+                    id="sede"
+                    v-model="form.sede"
+                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                    required
+                >
+                    <option value="" disabled>Selecciona tu sede</option>
+                    <option value="Santiago">Santiago</option>
+                    <option value="Concepcion">Concepción</option>
+                </select>
+                <InputError class="mt-2" :message="form.errors.sede" />
             </div>
 
             <div v-if="mustVerifyEmail && user.email_verified_at === null">

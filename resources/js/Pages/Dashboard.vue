@@ -103,9 +103,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-// --- DATOS DE PRUEBA (MOCKS) ---
-// Más adelante estos datos vendrán directamente de la base de datos de Laravel
-
 const stats = ref({
     alumnos: 142,
     profesores: 18,

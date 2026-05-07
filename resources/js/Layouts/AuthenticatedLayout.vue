@@ -26,6 +26,12 @@
                         <Link :href="route('admin.profesores.index')" :class="route().current('admin.profesores.*') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900 transition'">
                             Profesores
                         </Link>
+
+                        <!-- NUEVO ENLACE DE ESTADÍSTICAS (Adaptado al diseño) -->
+                        <Link :href="route('admin.estadisticas')" :class="route().current('admin.estadisticas') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900 transition'">
+                            Estadísticas
+                        </Link>
+
                     </template>
 
                     <template v-else-if="$page.props.auth.user.rol === 'profesor'">
@@ -42,6 +48,10 @@
                         
                         <Link :href="route('alumno.dashboard')" :class="route().current('alumno.dashboard') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900 transition'">
                             Mis Cursos
+                        </Link>
+
+                        <Link :href="route('mis-logros')" :class="route().current('mis-logros') ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900 transition'">
+                            Mis Logros
                         </Link>
                     </template>
                     

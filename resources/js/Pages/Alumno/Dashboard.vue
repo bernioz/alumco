@@ -1,4 +1,6 @@
 <template>
+    <Head title="Mis Cursos" />
+
     <AuthenticatedLayout>
         <div class="py-12 bg-slate-50 min-h-screen">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,12 +36,16 @@
                         <div class="p-6 flex-1 flex flex-col">
                             <h3 class="text-xl font-bold text-slate-800 mb-2">{{ curso.titulo }}</h3>
                             
+                            <!-- Barra de progreso dinámica -->
                             <div class="w-full bg-slate-100 h-1.5 rounded-full mb-6 mt-2 overflow-hidden">
-                                <div class="bg-blue-500 h-full w-1/3"></div>
+                                <div class="bg-blue-500 h-full transition-all duration-500" 
+                                     :style="{ width: (curso.pivot && curso.pivot.estado && curso.pivot.estado.toLowerCase() === 'completado') ? '100%' : (curso.progreso ? `${curso.progreso}%` : '33%') }">
+                                </div>
                             </div>
 
-                            <Link :href="route('alumno.dashboard')" 
-                                  class="mt-auto w-full text-center py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all">
+                            <Link 
+                                :href="route('alumno.cursos.show', curso.id)" 
+                                class="block w-full text-center py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition mt-auto">
                                 Ingresar al Curso
                             </Link>
                         </div>
@@ -62,9 +68,8 @@
 
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3'; 
 
-// Volvemos a misCursos como nos pide el controlador
 defineProps({
     misCursos: Array
 });

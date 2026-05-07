@@ -11,10 +11,8 @@ class ExplorarController extends Controller
 {
     public function index()
     {
-        // Traemos los cursos disponibles
-        $cursos = Curso::all(); 
+        $cursos = Curso::where('estado', 'publicado')->latest()->get();
         
-        // Obtenemos solo los IDs de los cursos donde ya está el alumno
         $inscritos = auth()->user()->cursosInscritos->pluck('id')->toArray();
 
         return Inertia::render('Alumno/Explorar', [
@@ -27,8 +25,6 @@ class ExplorarController extends Controller
     {
         $user = auth()->user();
 
-        // Usamos tu relación existente. 
-        // Agregamos el campo 'estado' inicial en la tabla pivote 'inscripciones'
         $user->cursosInscritos()->syncWithoutDetaching([
             $curso->id => ['estado' => 'en_progreso']
         ]);

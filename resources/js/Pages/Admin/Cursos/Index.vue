@@ -93,12 +93,12 @@ const props = defineProps({
     cursos: Array
 });
 
-// Variable para el buscador
+
 const busqueda = ref('');
 
-// Función automática que filtra los cursos en tiempo real
+
 const cursosFiltrados = computed(() => {
-    if (!busqueda.value) return props.cursos; // Si no hay búsqueda, muestra todos
+    if (!busqueda.value) return props.cursos; 
     
     return props.cursos.filter(curso => 
         curso.titulo.toLowerCase().includes(busqueda.value.toLowerCase())

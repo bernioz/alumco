@@ -30,7 +30,13 @@ class CursoController extends Controller
     {
         DB::beginTransaction();
         try {
-            $rutaImagen = $request->hasFile('imagen_portada') ? $request->file('imagen_portada')->store('portadas_cursos', 'public') : null;
+           
+            $rutaImagen = $request->hasFile('imagen_portada') ? 
+                $request->file('imagen_portada')->store('portadas_cursos', 'public') : null;
+
+           
+            $rutaCertificado = $request->hasFile('archivo_certificado') ? 
+                $request->file('archivo_certificado')->store('certificados', 'public') : null;
 
             $curso = Curso::create([
                 'profesor_id' => auth()->id(),
@@ -40,7 +46,7 @@ class CursoController extends Controller
                 'max_intentos' => $request->max_intentos,
                 'estado' => $request->estado,
                 'imagen_portada' => $rutaImagen,
-                // ELIMINADO de aquí el link_video, ya que pertenece al módulo
+                'archivo_certificado' => $rutaCertificado, 
             ]);
 
             if ($request->has('modulos')) {
@@ -50,7 +56,7 @@ class CursoController extends Controller
                             'titulo' => $moduloData['titulo'],
                             'descripcion_contenido' => $moduloData['contenido'],
                             'duracion' => $moduloData['duracion'] ?? null,
-                            'link_video' => $moduloData['link_video'] ?? null, // AGREGADO AQUÍ
+                            'link_video' => $moduloData['link_video'] ?? null,
                         ]);
 
                         if ($request->hasFile("modulos.$index.archivos_nuevos")) {
@@ -72,7 +78,6 @@ class CursoController extends Controller
                             'tipo' => $preguntaData['tipo'],
                             'texto_pregunta' => $preguntaData['texto'],
                             'respuesta_vf' => $preguntaData['tipo'] === 'vf' ? $preguntaData['respuesta_vf'] : null,
-                            // Eliminamos requiere_justificacion para mantener el backend limpio
                         ]);
 
                         if ($preguntaData['tipo'] === 'multiple' && isset($preguntaData['opciones'])) {
@@ -108,7 +113,6 @@ class CursoController extends Controller
         DB::beginTransaction();
         try {
             $curso = Curso::findOrFail($id);
-
             $datosBasicos = [
                 'titulo' => $request->titulo,
                 'descripcion' => $request->descripcion,
@@ -117,9 +121,16 @@ class CursoController extends Controller
                 'estado' => $request->estado,
             ];
 
+            
             if ($request->hasFile('imagen_portada')) {
                 if ($curso->imagen_portada) Storage::disk('public')->delete($curso->imagen_portada);
                 $datosBasicos['imagen_portada'] = $request->file('imagen_portada')->store('portadas_cursos', 'public');
+            }
+
+         
+            if ($request->hasFile('archivo_certificado')) {
+                if ($curso->archivo_certificado) Storage::disk('public')->delete($curso->archivo_certificado);
+                $datosBasicos['archivo_certificado'] = $request->file('archivo_certificado')->store('certificados', 'public');
             }
 
             $curso->update($datosBasicos);
@@ -137,7 +148,7 @@ class CursoController extends Controller
                                 'titulo' => $moduloData['titulo'],
                                 'descripcion_contenido' => $moduloData['contenido'],
                                 'duracion' => $moduloData['duracion'] ?? null,
-                                'link_video' => $moduloData['link_video'] ?? null, // AGREGADO AQUÍ
+                                'link_video' => $moduloData['link_video'] ?? null,
                             ]
                         );
 
@@ -189,6 +200,7 @@ class CursoController extends Controller
     {
         $curso = Curso::findOrFail($id);
         if ($curso->imagen_portada) Storage::disk('public')->delete($curso->imagen_portada);
+        if ($curso->archivo_certificado) Storage::disk('public')->delete($curso->archivo_certificado); // NUEVO
         $curso->delete();
         return redirect()->route('admin.cursos.index')->with('success', 'Curso eliminado para siempre.');
     }

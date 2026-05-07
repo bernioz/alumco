@@ -11,18 +11,27 @@ class Inscripcion extends Model
 
     protected $fillable = [
         'curso_id',
-        'user_id',
+        'alumno_id',
         'estado',
-        'authorized_at',
+        'fecha_termino', 
+        
+      
     ];
 
-    public function curso(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Curso::class);
+        return [
+            'fecha_termino' => 'datetime', 
+        ];
+    }
+
+    public function curso()
+    {
+        return $this->belongsTo(Curso::class, 'curso_id');
     }
 
     public function alumno(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'alumno_id');
     }
 }

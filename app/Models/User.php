@@ -22,6 +22,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'sexo',
+        'fecha_nacimiento',
+        'sede',
+        'rol',
     ];
 
     /**
@@ -44,33 +48,34 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'fecha_nacimiento' => 'date',
         ];
     }
+    
     public function cursosDictados()
     {
         return $this->hasMany(Curso::class, 'profesor_id');
     }
 
-    // Si es Alumno: Obtener los cursos en los que está inscrito
     public function cursosInscritos()
     {
         return $this->belongsToMany(Curso::class, 'inscripciones', 'alumno_id', 'curso_id')
                     ->withPivot('estado')
                     ->withTimestamps();
     }
+    
     public function cursos()
     {
         return $this->hasMany(Curso::class, 'profesor_id');
     }
 
     public function inscripciones()
-{
-    return $this->hasMany(Inscripcion::class, 'user_id');
-}
+    {
+        return $this->hasMany(Inscripcion::class, 'user_id');
+    }
 
-public function modulosCompletados()
-{
-    return $this->belongsToMany(Modulo::class, 'modulo_user')->withTimestamps();
-}
+    public function modulosCompletados()
+    {
+    }
 
 }

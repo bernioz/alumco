@@ -26,9 +26,14 @@ class CursoController extends Controller
     {
         DB::beginTransaction();
         try {
-            $rutaImagen = $request->hasFile('imagen_portada') ? $request->file('imagen_portada')->store('portadas_cursos', 'public') : null;
+            $rutaImagen = $request->hasFile('imagen_portada') 
+                ? $request->file('imagen_portada')->store('portadas_cursos', 'public') 
+                : null;
 
-            // EL CANDADO: Forzamos que el profesor_id sea el ID del usuario logueado
+            $rutaCertificado = $request->hasFile('archivo_certificado') 
+                ? $request->file('archivo_certificado')->store('certificados', 'public') 
+                : null;
+
             $curso = Curso::create([
                 'profesor_id' => auth()->id(), 
                 'titulo' => $request->titulo,
@@ -37,9 +42,9 @@ class CursoController extends Controller
                 'max_intentos' => $request->max_intentos,
                 'estado' => $request->estado,
                 'imagen_portada' => $rutaImagen,
+                'archivo_certificado' => $rutaCertificado, 
             ]);
 
-            // Lógica de Módulos y Archivos
             if ($request->has('modulos')) {
                 foreach ($request->modulos as $index => $moduloData) {
                     if (!empty($moduloData['titulo'])) {
@@ -47,7 +52,7 @@ class CursoController extends Controller
                             'titulo' => $moduloData['titulo'],
                             'descripcion_contenido' => $moduloData['contenido'],
                             'duracion' => $moduloData['duracion'] ?? null,
-                            'link_video' => $moduloData['link_video'] ?? null, // ¡Agregado aquí!
+                            'link_video' => $moduloData['link_video'] ?? null,
                         ]);
 
                         if ($request->hasFile("modulos.$index.archivos_nuevos")) {
@@ -62,7 +67,7 @@ class CursoController extends Controller
                 }
             }
 
-            // Lógica de Examen Final
+            // Logica de Examen Final
             if ($request->has('preguntas')) {
                 foreach ($request->preguntas as $preguntaData) {
                     if (!empty($preguntaData['texto'])) {
@@ -70,7 +75,6 @@ class CursoController extends Controller
                             'tipo' => $preguntaData['tipo'],
                             'texto_pregunta' => $preguntaData['texto'],
                             'respuesta_vf' => $preguntaData['tipo'] === 'vf' ? $preguntaData['respuesta_vf'] : null,
-                            // Eliminamos requiere_justificacion
                         ]);
 
                         if ($preguntaData['tipo'] === 'multiple' && isset($preguntaData['opciones'])) {
@@ -88,8 +92,8 @@ class CursoController extends Controller
             }
 
             DB::commit();
-            // Redirigimos a la vista del PROFESOR
             return redirect()->route('profesor.cursos.index')->with('success', 'Curso creado exitosamente');
+
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Error al guardar: ' . $e->getMessage()]);
@@ -98,7 +102,6 @@ class CursoController extends Controller
 
     public function edit($id)
     {
-        // EL CANDADO: Solo puede editar si el curso le pertenece
         $curso = Curso::where('profesor_id', auth()->id())->with(['modulos.archivos', 'preguntas.opciones'])->findOrFail($id);
         return Inertia::render('Profesor/Cursos/Edit', ['curso' => $curso]);
     }
@@ -107,7 +110,6 @@ class CursoController extends Controller
     {
         DB::beginTransaction();
         try {
-            // EL CANDADO: Buscamos el curso asegurándonos que sea del profesor actual
             $curso = Curso::where('profesor_id', auth()->id())->findOrFail($id);
 
             $datosBasicos = [
@@ -123,9 +125,13 @@ class CursoController extends Controller
                 $datosBasicos['imagen_portada'] = $request->file('imagen_portada')->store('portadas_cursos', 'public');
             }
 
+            if ($request->hasFile('archivo_certificado')) {
+                if ($curso->archivo_certificado) Storage::disk('public')->delete($curso->archivo_certificado);
+                $datosBasicos['archivo_certificado'] = $request->file('archivo_certificado')->store('certificados', 'public');
+            }
+
             $curso->update($datosBasicos);
 
-            // Sincronización de Módulos
             $modulosIdsEnviados = collect($request->modulos)->pluck('id')->filter(function($id) { return !empty($id) && $id !== 'null'; })->all();
             $curso->modulos()->whereNotIn('id', $modulosIdsEnviados)->delete();
 
@@ -139,7 +145,7 @@ class CursoController extends Controller
                                 'titulo' => $moduloData['titulo'],
                                 'descripcion_contenido' => $moduloData['contenido'],
                                 'duracion' => $moduloData['duracion'] ?? null,
-                                'link_video' => $moduloData['link_video'] ?? null, // ¡Agregado aquí también!
+                                'link_video' => $moduloData['link_video'] ?? null,
                             ]
                         );
 
@@ -155,7 +161,6 @@ class CursoController extends Controller
                 }
             }
 
-            // Sincronización de Preguntas
             $curso->preguntas()->delete();
             if ($request->has('preguntas')) {
                 foreach ($request->preguntas as $preguntaData) {
@@ -164,7 +169,6 @@ class CursoController extends Controller
                             'tipo' => $preguntaData['tipo'],
                             'texto_pregunta' => $preguntaData['texto'],
                             'respuesta_vf' => $preguntaData['tipo'] === 'vf' ? $preguntaData['respuesta_vf'] : null,
-                            // Eliminamos requiere_justificacion
                         ]);
 
                         if ($preguntaData['tipo'] === 'multiple' && isset($preguntaData['opciones'])) {
@@ -183,6 +187,7 @@ class CursoController extends Controller
 
             DB::commit();
             return redirect()->route('profesor.cursos.index')->with('success', 'Curso actualizado exitosamente');
+
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Error al actualizar: ' . $e->getMessage()]);
@@ -193,6 +198,7 @@ class CursoController extends Controller
     {
         $curso = Curso::where('profesor_id', auth()->id())->findOrFail($id);
         if ($curso->imagen_portada) Storage::disk('public')->delete($curso->imagen_portada);
+        if ($curso->archivo_certificado) Storage::disk('public')->delete($curso->archivo_certificado);
         $curso->delete();
 
         return redirect()->route('profesor.cursos.index')->with('success', 'Curso eliminado');

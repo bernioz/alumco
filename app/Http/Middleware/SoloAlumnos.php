@@ -13,7 +13,6 @@ class SoloAlumnos
     {
         $user = Auth::user();
 
-        // Bloqueamos a los que tengan rol de admin o profesor
         if ($user->rol === 'admin' || $user->rol === 'profesor') {
             return redirect('/dashboard'); 
         }

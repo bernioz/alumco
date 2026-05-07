@@ -14,7 +14,6 @@ return new class extends Migration
     Schema::create('modulo_user', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-        // Asumo que tu tabla de módulos se llama 'modulos'
         $table->foreignId('modulo_id')->constrained('modulos')->cascadeOnDelete();
         $table->timestamps();
     });

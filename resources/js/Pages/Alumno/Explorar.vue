@@ -61,8 +61,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Link } from '@inertiajs/vue3';
 
-
-// Recibimos los datos que nos manda el controlador
 defineProps({
     cursos: Array,
     inscritos: Array

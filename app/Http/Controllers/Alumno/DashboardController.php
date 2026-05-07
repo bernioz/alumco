@@ -10,13 +10,11 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Obtenemos al alumno logueado con sus cursos inscritos
         $alumno = Auth::user();
         
-        // Cargamos la relación que ya tienes definida
         $misCursos = $alumno->cursosInscritos()
             ->select('cursos.id', 'titulo', 'descripcion', 'imagen_portada')
-            ->withPivot('estado') // Traemos el estado (en curso, completado, etc)
+            ->withPivot('estado') 
             ->get();
 
         return Inertia::render('Alumno/Dashboard', [

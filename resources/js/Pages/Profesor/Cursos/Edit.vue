@@ -41,15 +41,31 @@
                                 <textarea v-model="form.descripcion" rows="4" class="w-full bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 rounded-lg"></textarea>
                             </div>
 
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-slate-700 mb-4">Imagen de Portada</label>
-                                <div v-if="curso.imagen_portada" class="mb-4">
-                                    <p class="text-xs font-bold text-slate-500 uppercase mb-2">Portada Actual:</p>
-                                    <img :src="`/storage/${curso.imagen_portada}`" class="h-40 w-auto rounded-lg shadow border border-slate-200 object-cover" />
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-4">Imagen de Portada</label>
+                                    <div v-if="curso.imagen_portada" class="mb-4">
+                                        <p class="text-xs font-bold text-slate-500 uppercase mb-2">Portada Actual:</p>
+                                        <img :src="`/storage/${curso.imagen_portada}`" class="h-40 w-auto rounded-lg shadow border border-slate-200 object-cover" />
+                                    </div>
+                                    <div class="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-4">
+                                        <p class="text-xs text-slate-500 mb-2">Sube una nueva foto si quieres reemplazar la actual:</p>
+                                        <input type="file" @change="manejarSubidaImagen" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                                    </div>
                                 </div>
-                                <div class="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-4">
-                                    <p class="text-xs text-slate-500 mb-2">Sube una nueva foto si quieres reemplazar la actual:</p>
-                                    <input type="file" @change="manejarSubidaImagen" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-4">Certificado de Aprobación</label>
+                                    <div v-if="curso.archivo_certificado" class="mb-4">
+                                        <p class="text-xs font-bold text-slate-500 uppercase mb-2">Certificado Actual:</p>
+                                        <a :href="`/storage/${curso.archivo_certificado}`" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition font-bold text-sm">
+                                            <span>📄</span> Ver Certificado Actual
+                                        </a>
+                                    </div>
+                                    <div class="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-4">
+                                        <p class="text-xs text-slate-500 mb-2">Sube un nuevo PDF o Imagen para reemplazar el actual:</p>
+                                        <input type="file" @change="manejarSubidaCertificado" accept=".pdf,image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -175,13 +191,11 @@ import { ref } from 'vue';
 const props = defineProps({ curso: Object });
 const tabActiva = ref(1);
 
-// --- CORRECCIÓN VISUAL V/F ---
 const formatearPreguntas = () => {
     if (!props.curso.preguntas || props.curso.preguntas.length === 0) return [{ tipo: 'multiple', texto: '', opciones: [{ texto: '', es_correcta: true }, { texto: '', es_correcta: false }, { texto: '', es_correcta: false }, { texto: '', es_correcta: false }], respuesta_vf: true }];
     return props.curso.preguntas.map(p => ({
         tipo: p.tipo, 
         texto: p.texto_pregunta, 
-        // 👇 ESTA ES LA CORRECCIÓN: Convertimos el 1 de la base de datos a un 'true' booleano para Vue
         respuesta_vf: p.respuesta_vf == 1,
         opciones: p.opciones && p.opciones.length > 0 ? p.opciones.map(o => ({ texto: o.texto_opcion, es_correcta: o.es_correcta === 1 })) : [{ texto: '', es_correcta: true }, { texto: '', es_correcta: false }, { texto: '', es_correcta: false }, { texto: '', es_correcta: false }]
     }));
@@ -194,15 +208,15 @@ const form = useForm({
     max_intentos: props.curso.max_intentos,
     estado: props.curso.estado,
     imagen_portada: null,
+    archivo_certificado: null, 
     
-    // Mapeamos los módulos incluyendo el link_video y los archivos que ya traen de la BD
     modulos: props.curso.modulos && props.curso.modulos.length > 0 
         ? props.curso.modulos.map(m => ({ 
             id: m.id, 
             titulo: m.titulo, 
             contenido: m.descripcion_contenido || '', 
             duracion: m.duracion || '',
-            link_video: m.link_video || '', // Cargamos el link si existe en BD
+            link_video: m.link_video || '', 
             archivos_existentes: m.archivos || [], 
             archivos_nuevos: null 
         }))
@@ -212,6 +226,7 @@ const form = useForm({
 });
 
 const manejarSubidaImagen = (e) => form.imagen_portada = e.target.files[0];
+const manejarSubidaCertificado = (e) => form.archivo_certificado = e.target.files[0]; 
 const manejarArchivosModulo = (event, index) => {
     form.modulos[index].archivos_nuevos = Array.from(event.target.files);
 };
@@ -238,7 +253,6 @@ const guardarCurso = (estado) => {
 
 const borrarArchivoGuardado = (archivoId, moduloIndex, fileIndex) => {
     if (confirm('¿Estás seguro de que deseas eliminar este archivo de forma permanente?')) {
-        // Usamos la ruta de profesor para eliminar archivos
         router.delete(route('profesor.archivos.destroy', archivoId), {
             preserveScroll: true,
             onSuccess: () => {

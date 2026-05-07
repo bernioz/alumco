@@ -12,13 +12,16 @@ use App\Http\Middleware\SoloAlumnos;
 
 // Importamos el controlador del Profesor
 use App\Http\Controllers\Profesor\CursoController as ProfesorCursoController;
-use App\Http\Controllers\Profesor\EvaluacionController as ProfesorEvaluacionController;
 
 // Importamos el controlador del Alumno
 use App\Http\Controllers\Alumno\DashboardController as AlumnoDashboardController;
 use App\Http\Controllers\Alumno\ExplorarController;
+use App\Http\Controllers\Alumno\SalaClasesController; 
 
-// Ruta principal (Bienvenida)
+use App\Models\Inscripcion;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -28,13 +31,10 @@ Route::get('/', function () {
     ]);
 });
 
-// ----------------------------------------------------------------------
-// 1. LA RUTA SEMÁFORO (CORREGIDA)
-// ----------------------------------------------------------------------
+
 Route::get('/dashboard', function () {
     $user = \Illuminate\Support\Facades\Auth::user();
 
-    // AHORA SÍ USA TU COLUMNA 'rol'
     if ($user->rol === 'admin') {
         return redirect()->route('admin.cursos.index');
     }
@@ -42,15 +42,11 @@ Route::get('/dashboard', function () {
         return redirect()->route('profesor.cursos.index');
     }
     
-    // Si no es admin ni profesor, va a alumno
     return redirect()->route('alumno.dashboard');
 
 })->middleware(['auth'])->name('dashboard');
 
 
-// ----------------------------------------------------------------------
-// TODAS LAS RUTAS PROTEGIDAS (Solo usuarios logueados)
-// ----------------------------------------------------------------------
 Route::middleware('auth')->group(function () {
     
     // RUTA DEL PERFIL DE ADMIN 
@@ -64,12 +60,10 @@ Route::middleware('auth')->group(function () {
         ]);
     })->name('admin.perfil');
 
-    // ------------------------------------------------------------------
+
     // ZONA ADMINISTRADOR
-    // ------------------------------------------------------------------
     Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
-        
-        // Cursos (Corregido: quitamos el "admin." duplicado)
+        // Cursos 
         Route::get('/cursos', [AdminCursoController::class, 'index'])->name('cursos.index');
         Route::get('/cursos/crear', [AdminCursoController::class, 'create'])->name('cursos.create');
         Route::post('/cursos', [AdminCursoController::class, 'store'])->name('cursos.store');
@@ -78,18 +72,24 @@ Route::middleware('auth')->group(function () {
         Route::delete('/cursos/{id}/eliminar', [AdminCursoController::class, 'destroy'])->name('cursos.destroy');
         Route::delete('/archivos/{id}', [AdminCursoController::class, 'eliminarArchivo'])->name('archivos.destroy');
 
+        // Usuarios
+        Route::get('/estadisticas', [UsuarioController::class, 'estadisticas'])->name('estadisticas');
+
+        //cambio de rol
+       Route::put('/usuarios/{usuario}/rol', [UsuarioController::class, 'actualizarRol'])->name('usuarios.actualizar-rol');
+
         // Alumnos
         Route::get('/alumnos', [UsuarioController::class, 'alumnos'])->name('alumnos.index');
         Route::get('/alumnos/{id}', [UsuarioController::class, 'verAlumno'])->name('alumnos.show');
+        Route::post('/alumnos/masivo', [UsuarioController::class, 'procesarMasivo'])->name('alumnos.masivo');
         
         // Profesores
         Route::get('/profesores', [UsuarioController::class, 'profesores'])->name('profesores.index');
         Route::get('/profesores/{id}', [UsuarioController::class, 'verProfesor'])->name('profesores.show');
     });
 
-    // ------------------------------------------------------------------
+    
     // ZONA PROFESORES
-    // ------------------------------------------------------------------
     Route::prefix('profesor')->name('profesor.')->group(function () {
         Route::get('/mis-cursos', [ProfesorCursoController::class, 'index'])->name('cursos.index');
         Route::get('/cursos/crear', [ProfesorCursoController::class, 'create'])->name('cursos.create');
@@ -100,34 +100,68 @@ Route::middleware('auth')->group(function () {
         Route::delete('/archivos/{id}', [ProfesorCursoController::class, 'eliminarArchivo'])->name('archivos.destroy');
     });
 
-    // ------------------------------------------------------------------
+
     // ZONA ALUMNOS 
-    // ------------------------------------------------------------------
-    Route::prefix('alumno')->name('alumno.')->group(function () {
-        Route::get('/dashboard', [AlumnoDashboardController::class, 'index'])
-            ->middleware([SoloAlumnos::class]) // Protegido contra admins/profesores
-            ->name('dashboard');
+    Route::prefix('alumno')->name('alumno.')->middleware([SoloAlumnos::class])->group(function () {
+    
+    Route::get('/dashboard', [AlumnoDashboardController::class, 'index'])->name('dashboard');
+    
+    Route::get('/explorar', [ExplorarController::class, 'index'])->name('explorar');
+    
+    Route::post('/inscribir/{curso}', [ExplorarController::class, 'inscribir'])->name('inscribir');
+    
+    Route::get('/cursos/{curso}', [SalaClasesController::class, 'show'])->name('cursos.show');
 
-        Route::get('/explorar', [ExplorarController::class, 'index'])
-        ->middleware([SoloAlumnos::class])
-        ->name('explorar');
-        
-        Route::post('/inscribir/{curso}', [ExplorarController::class, 'inscribir'])
-        ->middleware([SoloAlumnos::class])
-        ->name('inscribir');
+    Route::post('/modulos/{modulo}/completar', [SalaClasesController::class, 'completarModulo'])->name('modulos.completar');
 
-        Route::get('/curso/{curso}', [SalaClasesController::class, 'show'])->name('cursos.show');
-        Route::post('/modulo/{modulo}/completar', [SalaClasesController::class, 'completarModulo'])->name('modulos.completar');
+    Route::get('/cursos/{curso}/examen', [SalaClasesController::class, 'examen'])->name('examen.show');
+
+    Route::post('/cursos/{curso}/examen/finalizar', [SalaClasesController::class, 'finalizarExamen'])->name('examen.finalizar');
+
+    Route::get('/cursos/{curso}/certificado', [App\Http\Controllers\Alumno\SalaClasesController::class, 'verCertificado'])->name('cursos.certificado');
+});
+
+Route::get('/mis-logros', function () {
+    $user = Auth::user();
+
+    $inscripcionesCompletadas = Inscripcion::with('curso')
+        ->where('alumno_id', $user->id) 
+        ->whereNotNull('fecha_termino') 
+        ->get();
+
+    $cursos = $inscripcionesCompletadas->map(function ($inscripcion) {
+        return [
+            'id' => $inscripcion->curso->id,
+            'titulo' => $inscripcion->curso->titulo, 
+            'fecha_termino' => Carbon::parse($inscripcion->fecha_termino)->translatedFormat('d \d\e F, Y'),
+        ];
     });
 
-    // ------------------------------------------------------------------
-    // RUTAS POR DEFECTO DE LARAVEL BREEZE (Perfil)
-    // ------------------------------------------------------------------
+    $certificados = $inscripcionesCompletadas->map(function ($inscripcion) {
+        
+        $rutaCertificado = $inscripcion->curso->archivo_certificado;
+        
+        $urlDescarga = $rutaCertificado ? asset('storage/' . $rutaCertificado) : '#';
+
+        return [
+            'id' => $inscripcion->id,
+            'titulo' => 'Certificado: ' . $inscripcion->curso->titulo,
+            'fecha_obtencion' => Carbon::parse($inscripcion->fecha_termino)->translatedFormat('d \d\e F, Y'),
+            'url_descarga' => $urlDescarga, 
+        ];
+    });
+
+    return Inertia::render('Alumno/MisLogros', [
+        'cursos' => $cursos,
+        'certificados' => $certificados
+    ]);
+})->middleware(['auth', 'verified'])->name('mis-logros');
+
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 });
 
-// Carga las rutas de login y registro
 require __DIR__.'/auth.php';

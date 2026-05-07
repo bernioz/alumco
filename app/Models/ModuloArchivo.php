@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class ModuloArchivo extends Model
 {
-    // Permitimos que se guarden los archivos masivamente
     protected $guarded = [];
 
     public function archivos()

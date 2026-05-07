@@ -8,15 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('cursos', function (Blueprint $table) {
+        Schema::table('inscripciones', function (Blueprint $table) {
            
+            $table->timestamp('fecha_termino')->nullable(); 
         });
     }
 
     public function down(): void
     {
-        Schema::table('cursos', function (Blueprint $table) {
-           
+        Schema::table('inscripciones', function (Blueprint $table) {
+            $table->dropColumn('fecha_termino');
         });
     }
 };

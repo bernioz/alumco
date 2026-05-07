@@ -9,14 +9,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->date('fecha_nacimiento')->nullable()->after('sexo');
+            $table->enum('sede', ['Santiago', 'Concepcion'])->nullable()->after('fecha_nacimiento');
             
+         
+            $table->dropColumn('edad');
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            
+            $table->dropColumn(['fecha_nacimiento', 'sede']);
+            $table->integer('edad')->nullable();
         });
     }
 };

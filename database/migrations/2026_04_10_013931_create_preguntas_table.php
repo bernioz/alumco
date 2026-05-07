@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('preguntas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('curso_id')->constrained('cursos')->onDelete('cascade');
-            $table->string('tipo'); // multiple, vf, desarrollo
+            $table->string('tipo'); // multiple, vf
             $table->text('texto_pregunta');
             $table->boolean('respuesta_vf')->nullable();
             $table->boolean('requiere_justificacion')->default(false);

@@ -46,10 +46,20 @@
                                 <textarea v-model="form.descripcion" rows="4" class="w-full bg-slate-50 border-transparent focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 rounded-lg shadow-sm" placeholder="Describe de qué trata el curso y qué aprenderán los estudiantes..."></textarea>
                             </div>
 
-                            <div class="mb-2">
-                                <label class="block text-sm font-medium text-slate-700 mb-2">Imagen del Curso (Portada)</label>
-                                <div class="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-4 flex items-center justify-center">
-                                    <input type="file" @change="manejarSubidaImagen" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Imagen del Curso (Portada)</label>
+                                    <div class="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-4 flex items-center justify-center">
+                                        <input type="file" @change="manejarSubidaImagen" accept="image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Certificado de Aprobación</label>
+                                    <div class="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-4 flex items-center justify-center">
+                                        <input type="file" @change="manejarSubidaCertificado" accept=".pdf,image/*" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer" />
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-2">Sube el PDF o Imagen que se entregará al alumno cuando apruebe.</p>
                                 </div>
                             </div>
                         </div>
@@ -90,7 +100,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-2">Archivos y Recursos</label>
-                                    <input type="file" multiple class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
+                                    <input type="file" multiple @change="(e) => manejarArchivosModulo(e, index)" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
                                     <p class="text-xs text-slate-400 mt-1">Puedes seleccionar múltiples archivos (PDF, Word, Excel).</p>
                                 </div>
                             </div>
@@ -101,7 +111,6 @@
                         </div>
 
                         <div v-show="tabActiva === 3">
-                            
                             <div class="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
                                 <h3 class="text-lg font-bold text-slate-800 mb-4">Configuración del Examen</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -196,12 +205,13 @@ const form = useForm({
     titulo: '',
     descripcion: '',
     imagen_portada: null,
+    archivo_certificado: null, 
     exigencia_minima: 70,
     max_intentos: 2,
     estado: 'borrador',
     
     modulos: [
-        { titulo: '', contenido: '', duracion: '', link_video: '' }
+        { titulo: '', contenido: '', duracion: '', link_video: '', archivos_nuevos: [] } 
     ],
     
     preguntas: [
@@ -223,14 +233,24 @@ const manejarSubidaImagen = (event) => {
     form.imagen_portada = event.target.files[0];
 };
 
+const manejarSubidaCertificado = (event) => {
+    form.archivo_certificado = event.target.files[0];
+};
+
+const manejarArchivosModulo = (event, index) => {
+    form.modulos[index].archivos_nuevos = Array.from(event.target.files);
+};
+
+
 const agregarModulo = () => {
-    form.modulos.push({ titulo: '', contenido: '', duracion: '', link_video: '' });
+    form.modulos.push({ titulo: '', contenido: '', duracion: '', link_video: '', archivos_nuevos: [] });
 };
 
 const eliminarModulo = (index) => {
     form.modulos.splice(index, 1);
 };
 
+// Funciones para preguntas del examen
 const agregarPregunta = () => {
     form.preguntas.push({
         tipo: 'multiple',
@@ -259,6 +279,7 @@ const guardarCurso = (estadoSeleccionado) => {
     form.estado = estadoSeleccionado;
     form.post(route('admin.cursos.store'), {
         preserveScroll: true,
+        forceFormData: true, 
         onSuccess: () => {
             alert(`¡El curso fue guardado exitosamente como ${estadoSeleccionado}!`);
         },
