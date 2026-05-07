@@ -27,6 +27,7 @@ Para poder ejecutar este proyecto en un entorno local, asegúrate de tener insta
 
 Sigue estos pasos en tu terminal para levantar el proyecto de forma local:
 
+
 ### 1. Obtener el código fuente
 Si descargas el proyecto desde el archivo `.zip` (carpeta `codigo_fuente/`), extráelo y abre una terminal en la raíz de esa carpeta. Si usas Git:
 ```bash
