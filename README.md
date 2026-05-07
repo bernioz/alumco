@@ -33,3 +33,19 @@ Si descargas el proyecto desde el archivo `.zip` (carpeta `codigo_fuente/`), ext
 ```bash
 git clone <URL_DEL_REPOSITORIO>
 cd <NOMBRE_DE_LA_CARPETA>
+### 2. Instalar las dependencias del Backend (PHP)
+composer install
+### 3. Instalar dependecias del Frontend (Node)
+npm install
+### 4. Configurar variables de entorno
+cp .env.example .env
+### Abre el archivo .env y configura las credenciales de tu base de datos local  
+### 5. Generar clave de la aplicación
+php artisan key:generate
+### 6. Ejecutar las migraciones de la base de datos
+php artisan migrate
+### 7. Compilar los recursos del Frontend
+npm run dev
+### 8. Levantar servidor local
+php artisan serve
+### Ingresar al localhost
