@@ -227,7 +227,7 @@ const form = useForm({
 });
 
 const manejarSubidaImagen = (e) => form.imagen_portada = e.target.files[0];
-const manejarSubidaCertificado = (e) => form.archivo_certificado = e.target.files[0]; O
+const manejarSubidaCertificado = (e) => form.archivo_certificado = e.target.files[0]; 
 const manejarArchivosModulo = (event, index) => {
     form.modulos[index].archivos_nuevos = Array.from(event.target.files);
 };
